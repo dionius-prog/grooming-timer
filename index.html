@@ -125,7 +125,6 @@
     <div class="sub">Обратный отсчёт. Уложился в план — зелёный, вышел за план — красный.</div>
   </header>
 
-  <!-- ПОРОДЫ -->
   <section class="panel">
     <div class="panel-head">
       <h2>Порода</h2>
@@ -137,11 +136,13 @@
     <p class="hint">Двойной клик по названию — переименовать. Крестик — удалить.</p>
   </section>
 
-  <!-- БИБЛИОТЕКА -->
   <section class="panel">
     <div class="panel-head">
       <h2>Библиотека действий: <span class="accent" id="breedLabel">—</span></h2>
-      <button type="button" id="presetBtn" class="ghost">Загрузить пример</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" id="resetBtn" class="ghost">↺ Сбросить к стандарту</button>
+        <button type="button" id="presetBtn" class="ghost">Загрузить пример</button>
+      </div>
     </div>
 
     <form id="addForm" class="add-form" autocomplete="off">
@@ -159,7 +160,6 @@
     <p id="libEmpty" class="hint">Пока пусто — добавьте первое действие или загрузите пример.</p>
   </section>
 
-  <!-- ВЫПОЛНЕНИЕ -->
   <section class="panel">
     <div class="panel-head">
       <h2>Выполнение</h2>
@@ -178,7 +178,8 @@
 
   const LS_KEY     = 'grooming_breeds_v2';
   const LS_OLD_KEY = 'grooming_timer_library_v1';
-  const DEFAULT_BREEDS = ['Шпиц', 'Йорк', 'Пудель'];
+
+  // Универсальный пример (используется для новых пород и кнопкой «Загрузить пример»)
   const PRESET = [
     { name: 'Осмотр / подготовка', planned: 3 * 60 },
     { name: 'Купание',              planned: 10 * 60 },
@@ -190,6 +191,46 @@
     { name: 'Уши',                  planned: 4 * 60 },
     { name: 'Финал / фото',         planned: 3 * 60 }
   ];
+
+  // Стартовые библиотеки для пород по умолчанию
+  const DEFAULT_LIBRARIES = {
+    'Шпиц': [
+      { name: 'Осмотр / подготовка',       planned: 3 * 60 },
+      { name: 'Купание',                   planned: 10 * 60 },
+      { name: 'Сушка (фен + компрессор)',  planned: 20 * 60 },
+      { name: 'Вычёсывание',               planned: 15 * 60 },
+      { name: 'Стрижка корпуса',           planned: 20 * 60 },
+      { name: 'Стрижка морды',             planned: 8 * 60 },
+      { name: 'Лапы',                      planned: 5 * 60 },
+      { name: 'Когти',                     planned: 5 * 60 },
+      { name: 'Уши',                       planned: 4 * 60 },
+      { name: 'Финал / фото',              planned: 3 * 60 }
+    ],
+    'Йорк': [
+      { name: 'Осмотр / подготовка',       planned: 2 * 60 },
+      { name: 'Купание',                   planned: 7 * 60 },
+      { name: 'Сушка',                     planned: 10 * 60 },
+      { name: 'Вычёсывание',               planned: 8 * 60 },
+      { name: 'Стрижка корпуса',           planned: 20 * 60 },
+      { name: 'Стрижка морды',             planned: 10 * 60 },
+      { name: 'Лапы',                      planned: 5 * 60 },
+      { name: 'Когти',                     planned: 4 * 60 },
+      { name: 'Уши',                       planned: 4 * 60 },
+      { name: 'Финал / фото',              planned: 3 * 60 }
+    ],
+    'Пудель': [
+      { name: 'Осмотр / подготовка',       planned: 4 * 60 },
+      { name: 'Купание',                   planned: 15 * 60 },
+      { name: 'Сушка',                     planned: 25 * 60 },
+      { name: 'Вычёсывание',               planned: 15 * 60 },
+      { name: 'Стрижка корпуса',           planned: 30 * 60 },
+      { name: 'Стрижка морды',             planned: 12 * 60 },
+      { name: 'Лапы',                      planned: 8 * 60 },
+      { name: 'Когти',                     planned: 6 * 60 },
+      { name: 'Уши',                       planned: 5 * 60 },
+      { name: 'Финал / фото',              planned: 4 * 60 }
+    ]
+  };
 
   const $ = id => document.getElementById(id);
   const breedTabs   = $('breedTabs');
@@ -206,6 +247,7 @@
   const startBtn    = $('startBtn');
   const sessionArea = $('sessionArea');
   const presetBtn   = $('presetBtn');
+  const resetBtn    = $('resetBtn');
 
   let state = { activeId: null, breeds: [] };
   let editingId = null;
@@ -231,13 +273,25 @@
     return (neg ? '−' : '') + (h > 0 ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`);
   }
 
+  function makeItems(list){
+    return list.map(p => ({ id: uid(), name: p.name, planned: p.planned }));
+  }
+
+  // подобрать стартовую библиотеку по имени породы (регистр и «ё» не важны)
+  function defaultItemsFor(name){
+    const norm = s => String(s).toLowerCase().replace(/ё/g, 'е').trim();
+    const key = Object.keys(DEFAULT_LIBRARIES).find(k => norm(k) === norm(name));
+    const src = key ? DEFAULT_LIBRARIES[key] : PRESET;
+    return makeItems(src);
+  }
+
   /* ---------- состояние ---------- */
   function saveState(){
     localStorage.setItem(LS_KEY, JSON.stringify(state));
   }
 
   function loadState(){
-    // пытаемся прочитать новую структуру
+    // пробуем прочитать новую структуру
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (raw){
@@ -268,13 +322,17 @@
       }
     } catch(e){ /* ignore */ }
 
+    // собираем породы с предзаполненными библиотеками
     state = {
       activeId: null,
-      breeds: DEFAULT_BREEDS.map((name, i) => ({
-        id: uid(),
-        name,
-        items: i === 0 ? migratedItems : []
-      }))
+      breeds: Object.keys(DEFAULT_LIBRARIES).map(name => {
+        const useMigrated = migratedItems.length && name === 'Шпиц';
+        return {
+          id: uid(),
+          name,
+          items: useMigrated ? migratedItems : makeItems(DEFAULT_LIBRARIES[name])
+        };
+      })
     };
     state.activeId = state.breeds[0].id;
     saveState();
@@ -360,7 +418,8 @@
     if (name == null) return;
     const trimmed = name.trim();
     if (!trimmed) return;
-    const b = { id: uid(), name: trimmed, items: [] };
+    // если для этой породы есть предустановка — используем её, иначе PRESET
+    const b = { id: uid(), name: trimmed, items: defaultItemsFor(trimmed) };
     state.breeds.push(b);
     state.activeId = b.id;
     resetForm();
@@ -458,8 +517,23 @@
 
   presetBtn.addEventListener('click', () => {
     const breed = getBreed();
-    if (breed.items.length && !confirm(`Заменить библиотеку «${breed.name}» примером?`)) return;
-    breed.items = PRESET.map(p => ({ id: uid(), name: p.name, planned: p.planned }));
+    if (breed.items.length && !confirm(`Заменить библиотеку «${breed.name}» универсальным примером?`)) return;
+    breed.items = makeItems(PRESET);
+    resetForm();
+    saveState();
+    renderLibrary();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    const breed = getBreed();
+    const norm = s => String(s).toLowerCase().replace(/ё/g, 'е').trim();
+    const key = Object.keys(DEFAULT_LIBRARIES).find(k => norm(k) === norm(breed.name));
+    if (!key){
+      alert(`Для породы «${breed.name}» нет стандартного набора.\nИспользуйте «Загрузить пример» или добавьте действия вручную.`);
+      return;
+    }
+    if (!confirm(`Сбросить библиотеку «${breed.name}» к стандартному набору? Ваши изменения будут потеряны.`)) return;
+    breed.items = makeItems(DEFAULT_LIBRARIES[key]);
     resetForm();
     saveState();
     renderLibrary();
