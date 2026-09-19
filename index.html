@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Груминг — таймер действий</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1016">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Груминг">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<style>
+  :root{
+    --bg:#0d1016; --panel:#1b2029; --panel2:#232a35; --line:#2a3341;
+    --text:#e8edf5; --muted:#8b97a8;
+    --accent:#4c8dff; --ok:#2fbf71; --bad:#e5484d;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:24px 16px 100px;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%, #1d2634, #0d1016 60%);
+    color:var(--text); min-height:100vh;
+    padding-top:calc(24px + env(safe-area-inset-top));
+    padding-bottom:calc(100px + env(safe-area-inset-bottom));
+  }
+  .app{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+  h1{font-size:22px;margin:0}
+  .sub{color:var(--muted);font-size:13px;margin-top:6px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:0;font-weight:600}
+  button{font:inherit;cursor:pointer;border:none;border-radius:10px;padding:10px 16px;background:var(--panel2);color:var(--text);transition:.15s}
+  button:hover{filter:brightness(1.18)}
+  button:active{transform:scale(.98)}
+  .primary{background:var(--accent);color:#fff}
+  .danger{background:#3a2226;color:#ff8b8f}
+  .ghost{background:transparent;border:1px solid #37414f;color:var(--muted)}
+  .hint{color:var(--muted);font-size:14px;margin:8px 0 0}
+
+  .add-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .add-form input{
+    font:inherit;background:#12161e;border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:10px 12px;outline:none;
+  }
+  .add-form input:focus{border-color:var(--accent)}
+  #actName{flex:1;min-width:160px}
+  .time-inputs{display:flex;align-items:center;gap:4px;color:var(--muted)}
+  .time-inputs input{width:66px;text-align:center}
+  .time-inputs input::-webkit-outer-spin-button,
+  .time-inputs input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+  .lib-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .lib-item{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:10px;padding:8px 10px 8px 14px}
+  .lib-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lib-item .plan{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .lib-item .tools{display:flex;gap:2px}
+  .lib-item .tools button{padding:6px 9px;background:transparent;color:var(--muted);font-size:13px;border-radius:8px}
+  .lib-item .tools button:hover{background:#2f3948;color:#fff}
+
+  .current{background:#141a24;border:1px solid #2b3546;border-radius:14px;padding:18px;text-align:center}
+  .cur-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:10px}
+  .badge{background:#243046;color:#9dc0ff;padding:4px 10px;border-radius:99px;font-size:12px}
+  .cur-name{font-size:20px;font-weight:600;margin-bottom:6px}
+  .cur-timer{font-size:58px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1.1}
+  .cur-timer.over{color:var(--bad)}
+  .cur-controls{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+
+  .sess-list{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .sess-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+             background:var(--panel2);font-size:14px;border-left:4px solid #37414f}
+  .sess-item .num{color:var(--muted);width:18px;font-variant-numeric:tabular-nums}
+  .sess-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sess-item .vals{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .sess-item.ok{border-left-color:var(--ok);background:#15271e}
+  .sess-item.ok .vals{color:var(--ok)}
+  .sess-item.over{border-left-color:var(--bad);background:#2a191b}
+  .sess-item.over .vals{color:var(--bad)}
+  .sess-item.active{border-left-color:var(--accent);background:#192335}
+  .sess-item.active .vals{color:#9dc0ff}
+
+  .summary{margin-top:16px;padding:16px;border-radius:14px;text-align:center;font-size:15px}
+  .summary.good{background:#15271e;border:1px solid var(--ok);color:var(--ok)}
+  .summary.bad{background:#2a191b;border:1px solid var(--bad);color:#ff9a9d}
+  .summary b{font-size:20px}
+  .summary .line{margin-top:6px;font-size:13px;opacity:.85;color:var(--text)}
+
+  #installBtn{
+    position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); left:50%;
+    transform:translateX(-50%); display:none; padding:13px 24px; border-radius:99px;
+    border:none; background:var(--accent); color:#fff; font:600 15px system-ui,sans-serif;
+    box-shadow:0 10px 28px rgba(76,141,255,.45); cursor:pointer; z-index:99;
+  }
+  #installBtn:hover{filter:brightness(1.1)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>✂️ Груминг — таймер действий</h1>
+    <div class="sub">Обратный отсчёт. Уложился в план — зелёный, вышел за план — красный.</div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Библиотека действий</h2>
+      <button type="button" id="presetBtn" class="ghost">Загрузить пример</button>
+    </div>
+
+    <form id="addForm" class="add-form" autocomplete="off">
+      <input id="actName" type="text" placeholder="Название действия">
+      <div class="time-inputs">
+        <input id="actMin" type="number" min="0" max="599" placeholder="мин">
+        <span>:</span>
+        <input id="actSec" type="number" min="0" max="59" placeholder="сек">
+      </div>
+      <button type="submit" id="addBtn" class="primary">Добавить</button>
+      <button type="button" id="cancelEditBtn" class="ghost" hidden>Отмена</button>
+    </form>
+
+    <ul id="libList" class="lib-list"></ul>
+    <p id="libEmpty" class="hint">Пока пусто — добавьте первое действие или загрузите пример.</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Выполнение</h2>
+      <button id="startBtn" class="primary">▶ Начать сеанс</button>
+    </div>
+    <div id="sessionArea"></div>
+  </section>
+
+</div>
+
+<button id="installBtn">⬇ Установить на телефон</button>
+
+<script>
+(function(){
+  "use strict";
+
+  const LS_KEY = 'grooming_timer_library_v1';
+
+  const $ = id => document.getElementById(id);
+  const libList   = $('libList');
+  const libEmpty  = $('libEmpty');
+  const addForm   = $('addForm');
+  const actName   = $('actName');
+  const actMin    = $('actMin');
+  const actSec    = $('actSec');
+  const addBtn    = $('addBtn');
+  const cancelEditBtn = $('cancelEditBtn');
+  const startBtn  = $('startBtn');
+  const sessionArea = $('sessionArea');
+  const presetBtn = $('presetBtn');
+
+  let library = [];
+  let editingId = null;
+  let session = null;
+  let tickId = null;
+
+  const uid = () => Math.random().toString(36).slice(2, 9);
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, c => (
+      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+    ));
+  }
+
+  // мс -> "MM:SS" или "H:MM:SS" (со знаком минус для отрицательных)
+  function fmt(ms){
+    if (ms == null || isNaN(ms)) return '--:--';
+    const neg = ms < 0;
+    let t = Math.floor(Math.abs(ms) / 1000);
+    const h = Math.floor(t / 3600); t %= 3600;
+    const m = Math.floor(t / 60);
+    const s = t % 60;
+    const p = n => String(n).padStart(2, '0');
+    return (neg ? '−' : '') + (h > 0 ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`);
+  }
+
+  function loadLibrary(){
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      library = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(library)) library = [];
+    } catch(e){ library = []; }
+  }
+  function saveLibrary(){
+    localStorage.setItem(LS_KEY, JSON.stringify(library));
+  }
+
+  function renderLibrary(){
+    libList.innerHTML = '';
+    library.forEach((a, i) => {
+      const li = document.createElement('li');
+      li.className = 'lib-item';
+      li.innerHTML =
+        `<span class="nm">${esc(a.name)}</span>
+         <span class="plan">${fmt(a.planned * 1000)}</span>
+         <span class="tools">
+           <button type="button" data-act="up"   data-i="${i}" title="Выше">▲</button>
+           <button type="button" data-act="down" data-i="${i}" title="Ниже">▼</button>
+           <button type="button" data-act="edit" data-i="${i}" title="Изменить">✎</button>
+           <button type="button" data-act="del"  data-i="${i}" title="Удалить">✕</button>
+         </span>`;
+      libList.appendChild(li);
+    });
+    libEmpty.hidden = library.length > 0;
+  }
+
+  libList.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const i = Number(btn.dataset.i);
+    const act = btn.dataset.act;
+
+    if (act === 'up' && i > 0){
+      [library[i-1], library[i]] = [library[i], library[i-1]];
+    } else if (act === 'down' && i < library.length - 1){
+      [library[i+1], library[i]] = [library[i], library[i+1]];
+    } else if (act === 'edit'){
+      const a = library[i];
+      editingId = a.id;
+      actName.value = a.name;
+      actMin.value = Math.floor(a.planned / 60) || '';
+      actSec.value = a.planned % 60 || '';
+      addBtn.textContent = 'Сохранить';
+      cancelEditBtn.hidden = false;
+      actName.focus();
+      return;
+    } else if (act === 'del'){
+      if (!confirm('Удалить действие «' + library[i].name + '»?')) return;
+      if (editingId === library[i].id) resetForm();
+      library.splice(i, 1);
+    } else {
+      return;
+    }
+    saveLibrary();
+    renderLibrary();
+  });
+
+  function resetForm(){
+    editingId = null;
+    addForm.reset();
+    addBtn.textContent = 'Добавить';
+    cancelEditBtn.hidden = true;
+  }
+
+  cancelEditBtn.addEventListener('click', () => { resetForm(); actName.focus(); });
+
+  addForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = actName.value.trim();
+    if (!name) { actName.focus(); return; }
+    const mins = parseInt(actMin.value, 10) || 0;
+    const secs = parseInt(actSec.value, 10) || 0;
+    const planned = mins * 60 + secs;
+    if (planned <= 0) { alert('Укажите плановое время (мин и/или сек).'); return; }
+
+    if (editingId){
+      const a = library.find(x => x.id === editingId);
+      if (a){ a.name = name; a.planned = planned; }
+      resetForm();
+    } else {
+      library.push({ id: uid(), name, planned });
+      actName.value = ''; actMin.value = ''; actSec.value = '';
+    }
+    saveLibrary();
+    renderLibrary();
+    actName.focus();
+  });
+
+  presetBtn.addEventListener('click', () => {
+    if (library.length && !confirm('Заменить текущую библиотеку примером?')) return;
+    library = [
+      { id: uid(), name: 'Осмотр / подготовка', planned: 3 * 60 },
+      { id: uid(), name: 'Купание',              planned: 10 * 60 },
+      { id: uid(), name: 'Сушка',                planned: 15 * 60 },
+      { id: uid(), name: 'Стрижка корпуса',      planned: 25 * 60 },
+      { id: uid(), name: 'Стрижка морды',        planned: 10 * 60 },
+      { id: uid(), name: 'Лапы',                 planned: 7 * 60 },
+      { id: uid(), name: 'Когти',                planned: 5 * 60 },
+      { id: uid(), name: 'Уши',                  planned: 4 * 60 },
+      { id: uid(), name: 'Финал / фото',         planned: 3 * 60 }
+    ];
+    resetForm();
+    saveLibrary();
+    renderLibrary();
+  });
+
+  /* ---------- сеанс ---------- */
+  // сколько уже прошло с начала текущего действия (с учётом пауз)
+  function elapsedMs(it){
+    if (it.status !== 'active') return it.actual || 0;
+    const now = it.paused ? it.pauseStart : Date.now();
+    return now - it.startTime - it.pausedTotal;
+  }
+
+  // сколько осталось до конца плана (может быть отрицательным)
+  function remainingMs(it){
+    return it.planned - elapsedMs(it);
+  }
+
+  function startSession(){
+    if (!library.length){ alert('Сначала добавьте действия в библиотеку.'); return; }
+    session = {
+      items: library.map(a => ({
+        name: a.name,
+        planned: a.planned * 1000,
+        actual: null,
+        status: 'pending',
+        startTime: 0,
+        pausedTotal: 0,
+        paused: false,
+        pauseStart: 0
+      })),
+      index: 0,
+      finished: false
+    };
+    beginItem(0);
+  }
+
+  function beginItem(i){
+    const it = session.items[i];
+    it.status = 'active';
+    it.startTime = Date.now();
+    it.pausedTotal = 0;
+    it.paused = false;
+    it.pauseStart = 0;
+    session.index = i;
+    startTick();
+    renderSession();
+  }
+
+  function startTick(){
+    if (tickId) clearInterval(tickId);
+    tickId = setInterval(() => {
+      if (!session || session.finished) return;
+      const it = session.items[session.index];
+      if (!it || it.status !== 'active') return;
+      const el = $('curTimer');
+      if (!el) return;
+      const rem = remainingMs(it);
+      el.textContent = fmt(rem);
+      el.classList.toggle('over', rem < 0);
+    }, 200);
+  }
+
+  function stopTick(){
+    if (tickId){ clearInterval(tickId); tickId = null; }
+  }
+
+  function finishCurrent(){
+    if (!session || session.finished) return;
+    const it = session.items[session.index];
+    it.actual = elapsedMs(it);
+    it.paused = false;
+    it.status = it.actual <= it.planned ? 'ok' : 'over';
+
+    if (session.index + 1 < session.items.length){
+      beginItem(session.index + 1);
+    } else {
+      session.finished = true;
+      stopTick();
+      renderSession();
+    }
+  }
+
+  function togglePause(){
+    if (!session || session.finished) return;
+    const it = session.items[session.index];
+    if (!it || it.status !== 'active') return;
+    if (it.paused){
+      it.pausedTotal += Date.now() - it.pauseStart;
+      it.paused = false;
+    } else {
+      it.paused = true;
+      it.pauseStart = Date.now();
+    }
+    renderSession();
+  }
+
+  function endSession(){
+    stopTick();
+    session = null;
+    renderSession();
+  }
+
+  function sessItemHtml(it, i){
+    let vals;
+    if (it.status === 'pending'){
+      vals = `план ${fmt(it.planned)}`;
+    } else if (it.status === 'active'){
+      const rem = remainingMs(it);
+      vals = rem >= 0
+        ? `осталось ${fmt(rem)}`
+        : `<b>перебор ${fmt(Math.abs(rem))}</b>`;
+    } else {
+      const diff = it.actual - it.planned;
+      vals = `план ${fmt(it.planned)} · факт ${fmt(it.actual)} · ` +
+             `<b>${diff <= 0 ? '−' : '+'}${fmt(Math.abs(diff))}</b>`;
+    }
+    return `<li class="sess-item ${it.status}">
+              <span class="num">${i + 1}</span>
+              <span class="nm">${esc(it.name)}</span>
+              <span class="vals">${vals}</span>
+            </li>`;
+  }
+
+  function renderSession(){
+    startBtn.hidden = !!session;
+
+    if (!session){
+      sessionArea.innerHTML = '<p class="hint">Нажмите «Начать сеанс» — пойдёт обратный отсчёт по каждому действию. Кнопка «Готово» фиксирует время и сразу запускает следующее действие.</p>';
+      return;
+    }
+
+    let html = '';
+
+    if (!session.finished){
+      const it = session.items[session.index];
+      const rem = remainingMs(it);
+      html += `
+        <div class="current">
+          <div class="cur-top">
+            <span class="badge">Шаг ${session.index + 1} из ${session.items.length}</span>
+            <span>План: ${fmt(it.planned)}</span>
+          </div>
+          <div class="cur-name">${esc(it.name)}</div>
+          <div class="cur-timer${rem < 0 ? ' over' : ''}" id="curTimer">${fmt(rem)}</div>
+          <div class="cur-controls">
+            <button type="button" id="pauseBtn" class="ghost">${it.paused ? '▶ Продолжить' : '⏸ Пауза'}</button>
+            <button type="button" id="doneBtn" class="primary">Готово →</button>
+            <button type="button" id="abortBtn" class="danger">Отменить сеанс</button>
+          </div>
+        </div>`;
+    } else {
+      const tp = session.items.reduce((s, i) => s + i.planned, 0);
+      const ta = session.items.reduce((s, i) => s + (i.actual || 0), 0);
+      const okCount = session.items.filter(i => i.status === 'ok').length;
+      const diff = ta - tp;
+      const good = diff <= 0;
+      html += `
+        <div class="summary ${good ? 'good' : 'bad'}">
+          <b>${good ? '✓ Уложились в план' : '✕ Вышли за план'} ${diff <= 0 ? '−' : '+'}${fmt(Math.abs(diff))}</b>
+          <div class="line">План: ${fmt(tp)} · Факт: ${fmt(ta)} · В норме ${okCount} из ${session.items.length}</div>
+        </div>
+        <div class="cur-controls">
+          <button type="button" id="restartBtn" class="primary">↻ Новый сеанс</button>
+          <button type="button" id="closeSession" class="ghost">Закрыть</button>
+        </div>`;
+    }
+
+    html += '<ul class="sess-list">' +
+            session.items.map((it, i) => sessItemHtml(it, i)).join('') +
+            '</ul>';
+
+    sessionArea.innerHTML = html;
+  }
+
+  sessionArea.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    switch (btn.id){
+      case 'pauseBtn':     togglePause(); break;
+      case 'doneBtn':      finishCurrent(); break;
+      case 'abortBtn':     if (confirm('Отменить текущий сеанс? Результаты не сохранятся.')) endSession(); break;
+      case 'closeSession': endSession(); break;
+      case 'restartBtn':   startSession(); break;
+    }
+  });
+
+  startBtn.addEventListener('click', startSession);
+
+  loadLibrary();
+  renderLibrary();
+  renderSession();
+})();
+</script>
+
+<script>
+  // Service worker — для офлайн-режима и установки на телефон
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => {
+        console.warn('SW не зарегистрирован:', err);
+      });
+    });
+  }
+
+  // Кнопка «Установить на телефон»
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('Установка:', outcome);
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+  });
+</script>
+
+</body>
+</html>
