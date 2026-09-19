@@ -44,22 +44,61 @@
   .ghost{background:transparent;border:1px solid #37414f;color:var(--muted)}
   .hint{color:var(--muted);font-size:14px;margin:8px 0 0}
 
-  /* породы */
-  .breed-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  .breed-tabs{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
-  .breed-tab{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 14px;border-radius:99px;background:var(--panel2);
-    color:var(--text);border:1px solid transparent;cursor:pointer;font:inherit;
-    transition:.15s;user-select:none;
+  /* породы — выпадающий список */
+  .breed-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .dropdown{position:relative;flex:1;min-width:200px}
+  .dd-toggle{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--panel2);border:1px solid #37414f;color:var(--text);
+    padding:12px 16px;border-radius:12px;font:inherit;cursor:pointer;
+    text-align:left;transition:.15s;
   }
-  .breed-tab:hover{filter:brightness(1.15)}
-  .breed-tab.active{background:var(--accent);color:#fff}
-  .breed-tab .tab-x{
-    font-size:11px;opacity:.55;padding:0 4px;border-radius:50%;line-height:1;
-    display:inline-block;
+  .dd-toggle:hover{border-color:#4a5568;filter:none}
+  .dd-toggle .dd-current{
+    display:flex;align-items:center;gap:10px;min-width:0;flex:1;
   }
-  .breed-tab .tab-x:hover{opacity:1;background:rgba(0,0,0,.3)}
+  .dd-toggle .dd-name{
+    font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .dd-toggle .dd-count{
+    color:var(--muted);font-size:12px;white-space:nowrap;
+  }
+  .dd-toggle .dd-arrow{
+    color:var(--muted);font-size:12px;transition:.2s;
+    transform:rotate(0deg);
+  }
+  .dropdown.open .dd-toggle{border-color:var(--accent);box-shadow:0 0 0 3px rgba(76,141,255,.15)}
+  .dropdown.open .dd-arrow{transform:rotate(180deg);color:var(--accent)}
+
+  .dd-menu{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;
+    background:#1e242e;border:1px solid var(--line);border-radius:12px;
+    padding:6px;z-index:50;
+    box-shadow:0 16px 40px rgba(0,0,0,.55);
+    max-height:320px;overflow-y:auto;
+    display:none;
+  }
+  .dropdown.open .dd-menu{display:block}
+  .dd-item{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border-radius:8px;cursor:pointer;
+    transition:.1s;
+  }
+  .dd-item:hover{background:#2a3341}
+  .dd-item.active{background:#243046;color:#9dc0ff}
+  .dd-item .dd-i-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dd-item.active .dd-i-name{font-weight:600}
+  .dd-item .dd-i-count{
+    font-size:12px;color:var(--muted);white-space:nowrap;
+    background:rgba(0,0,0,.25);padding:2px 8px;border-radius:99px;
+  }
+  .dd-item.active .dd-i-count{color:#9dc0ff;background:rgba(76,141,255,.15)}
+  .dd-item .dd-i-tools{display:flex;gap:2px}
+  .dd-item .dd-i-tools button{
+    padding:4px 7px;background:transparent;color:var(--muted);
+    font-size:12px;border-radius:6px;
+  }
+  .dd-item .dd-i-tools button:hover{background:#3a4557;color:#fff}
 
   .add-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
   .add-form input{
@@ -102,11 +141,71 @@
   .sess-item.active{border-left-color:var(--accent);background:#192335}
   .sess-item.active .vals{color:#9dc0ff}
 
-  .summary{margin-top:16px;padding:16px;border-radius:14px;text-align:center;font-size:15px}
+  .summary{margin-top:16px;padding:20px 16px;border-radius:14px;text-align:center;font-size:15px}
   .summary.good{background:#15271e;border:1px solid var(--ok);color:var(--ok)}
   .summary.bad{background:#2a191b;border:1px solid var(--bad);color:#ff9a9d}
-  .summary b{font-size:20px}
-  .summary .line{margin-top:6px;font-size:13px;opacity:.85;color:var(--text)}
+  .summary b{font-size:22px;display:block;margin-bottom:4px}
+
+  .summary .breed-name{
+    margin-top:8px;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.4px;
+    color:#9dc0ff;
+    text-transform:uppercase;
+  }
+
+  .summary .line{
+    margin-top:10px;
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:.2px;
+    color:var(--text);
+    font-variant-numeric:tabular-nums;
+    line-height:1.4;
+  }
+  .summary .line .lbl{
+    color:var(--muted);
+    font-weight:500;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .summary .line .val{
+    font-weight:700;
+    font-size:21px;
+    color:#fff;
+  }
+  .summary.good .line .val{color:#b8ffd0}
+  .summary.bad .line .val{color:#ffc2c4}
+  .summary .line .sep{
+    color:var(--muted);opacity:.5;margin:0 8px;
+  }
+
+  .summary .praise{
+    margin-top:12px;
+    font-size:17px;
+    line-height:1.3;
+    font-weight:700;
+    letter-spacing:.3px;
+    padding:10px 14px;
+    border-radius:10px;
+    background:rgba(47,191,113,.15);
+    border:1px dashed var(--ok);
+    color:#8fffb3;
+  }
+  .summary .shame{
+    margin-top:12px;
+    font-size:17px;
+    line-height:1.3;
+    font-weight:700;
+    letter-spacing:.3px;
+    padding:10px 14px;
+    border-radius:10px;
+    background:rgba(229,72,77,.15);
+    border:1px dashed var(--bad);
+    color:#ff9a9d;
+  }
 
   #installBtn{
     position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); left:50%;
@@ -128,17 +227,27 @@
   <section class="panel">
     <div class="panel-head">
       <h2>Порода</h2>
+      <button id="addBreedBtn" class="primary">+ Порода</button>
     </div>
-    <div class="breed-row">
-      <div id="breedTabs" class="breed-tabs"></div>
-      <button id="addBreedBtn" class="ghost" title="Добавить породу">+ Порода</button>
+
+    <div class="breed-bar">
+      <div id="dropdown" class="dropdown">
+        <button type="button" id="ddToggle" class="dd-toggle">
+          <span class="dd-current">
+            <span class="dd-name" id="ddName">—</span>
+            <span class="dd-count" id="ddCount"></span>
+          </span>
+          <span class="dd-arrow">▼</span>
+        </button>
+        <div id="ddMenu" class="dd-menu"></div>
+      </div>
     </div>
-    <p class="hint">Двойной клик по названию — переименовать. Крестик — удалить.</p>
+    <p class="hint">Нажмите на кнопку — откроется список пород. Внутри списка: ✎ — переименовать, ✕ — удалить.</p>
   </section>
 
   <section class="panel">
     <div class="panel-head">
-      <h2>Библиотека действий: <span class="accent" id="breedLabel">—</span></h2>
+      <h2>Библиотека: <span class="accent" id="breedLabel">—</span></h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" id="resetBtn" class="ghost">↺ Сбросить к стандарту</button>
         <button type="button" id="presetBtn" class="ghost">Загрузить пример</button>
@@ -179,7 +288,6 @@
   const LS_KEY     = 'grooming_breeds_v2';
   const LS_OLD_KEY = 'grooming_timer_library_v1';
 
-  // Универсальный пример (используется для новых пород и кнопкой «Загрузить пример»)
   const PRESET = [
     { name: 'Осмотр / подготовка', planned: 3 * 60 },
     { name: 'Купание',              planned: 10 * 60 },
@@ -192,7 +300,6 @@
     { name: 'Финал / фото',         planned: 3 * 60 }
   ];
 
-  // Стартовые библиотеки для пород по умолчанию
   const DEFAULT_LIBRARIES = {
     'Шпиц': [
       { name: 'Осмотр / подготовка',       planned: 3 * 60 },
@@ -232,8 +339,28 @@
     ]
   };
 
+  const PRAISES = [
+    '🔥 Красавчег, можешь просить 50%!',
+    '👏 Ай молодца!',
+    '✨ То ли ты супер, то ли питомец идеальный!',
+    '🏆 Ну ты топ грумер прям!'
+  ];
+
+  const SHAMES = [
+    '😅 Грумер года блин!!!',
+    '🤔 А кто этооо сдееелал???',
+    '💆 Отвлеку клиента, работай.',
+    '🐕 Ты уже вторую собаку достриг? А, нет, первую...',
+    '🧘 Ты решил, что груминг — это медитация?',
+    '🎨 Скажи клиенту, что ты художник, тебя торопить нельзя.'
+  ];
+
   const $ = id => document.getElementById(id);
-  const breedTabs   = $('breedTabs');
+  const dropdown    = $('dropdown');
+  const ddToggle    = $('ddToggle');
+  const ddName      = $('ddName');
+  const ddCount     = $('ddCount');
+  const ddMenu      = $('ddMenu');
   const addBreedBtn = $('addBreedBtn');
   const breedLabel  = $('breedLabel');
   const libList     = $('libList');
@@ -273,11 +400,21 @@
     return (neg ? '−' : '') + (h > 0 ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`);
   }
 
+  function plural(n){
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'действие';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'действия';
+    return 'действий';
+  }
+
+  function pick(arr){
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
   function makeItems(list){
     return list.map(p => ({ id: uid(), name: p.name, planned: p.planned }));
   }
 
-  // подобрать стартовую библиотеку по имени породы (регистр и «ё» не важны)
   function defaultItemsFor(name){
     const norm = s => String(s).toLowerCase().replace(/ё/g, 'е').trim();
     const key = Object.keys(DEFAULT_LIBRARIES).find(k => norm(k) === norm(name));
@@ -285,13 +422,11 @@
     return makeItems(src);
   }
 
-  /* ---------- состояние ---------- */
   function saveState(){
     localStorage.setItem(LS_KEY, JSON.stringify(state));
   }
 
   function loadState(){
-    // пробуем прочитать новую структуру
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (raw){
@@ -306,7 +441,6 @@
       }
     } catch(e){ /* ignore */ }
 
-    // миграция из старой версии (одна библиотека без пород)
     let migratedItems = [];
     try {
       const oldRaw = localStorage.getItem(LS_OLD_KEY);
@@ -322,7 +456,6 @@
       }
     } catch(e){ /* ignore */ }
 
-    // собираем породы с предзаполненными библиотеками
     state = {
       activeId: null,
       breeds: Object.keys(DEFAULT_LIBRARIES).map(name => {
@@ -347,26 +480,56 @@
     return b;
   }
 
-  /* ---------- породы ---------- */
-  function renderBreeds(){
-    breedTabs.innerHTML = '';
+  function renderDropdown(){
+    const cur = getBreed();
+
+    ddName.textContent = cur.name;
+    ddCount.textContent = `${cur.items.length} ${plural(cur.items.length)}`;
+
+    ddMenu.innerHTML = '';
     state.breeds.forEach(b => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'breed-tab' + (b.id === state.activeId ? ' active' : '');
-      btn.dataset.id = b.id;
-      btn.innerHTML = `<span class="tab-name">${esc(b.name)}</span><span class="tab-x" data-x="1" title="Удалить породу">✕</span>`;
-      breedTabs.appendChild(btn);
+      const item = document.createElement('div');
+      item.className = 'dd-item' + (b.id === state.activeId ? ' active' : '');
+      item.dataset.id = b.id;
+      item.innerHTML =
+        `<span class="dd-i-name">${esc(b.name)}</span>
+         <span class="dd-i-count">${b.items.length}</span>
+         <span class="dd-i-tools">
+           <button type="button" data-act="edit" title="Переименовать">✎</button>
+           <button type="button" data-act="del"  title="Удалить">✕</button>
+         </span>`;
+      ddMenu.appendChild(item);
     });
   }
 
-  breedTabs.addEventListener('click', e => {
-    const tab = e.target.closest('.breed-tab');
-    if (!tab) return;
-    const id = tab.dataset.id;
+  ddToggle.addEventListener('click', e => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
 
-    // удаление породы
-    if (e.target.dataset.x === '1'){
+  ddMenu.addEventListener('click', e => {
+    const item = e.target.closest('.dd-item');
+    if (!item) return;
+    const id = item.dataset.id;
+    const btn = e.target.closest('button');
+    const act = btn ? btn.dataset.act : null;
+
+    if (act === 'edit'){
+      e.stopPropagation();
+      const b = state.breeds.find(x => x.id === id);
+      if (!b) return;
+      const name = prompt('Новое название породы:', b.name);
+      if (name == null) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      b.name = trimmed;
+      saveState();
+      renderDropdown();
+      if (state.activeId === id) renderLibrary();
+      return;
+    }
+
+    if (act === 'del'){
       e.stopPropagation();
       if (state.breeds.length <= 1){
         alert('Нельзя удалить последнюю породу.');
@@ -378,39 +541,35 @@
       if (state.activeId === id) state.activeId = state.breeds[0].id;
       if (session){ stopTick(); session = null; }
       saveState();
-      renderBreeds();
+      renderDropdown();
       renderLibrary();
       renderSession();
       return;
     }
 
-    // переключение породы
-    if (id === state.activeId) return;
+    if (id === state.activeId){
+      dropdown.classList.remove('open');
+      return;
+    }
     if (session && !confirm('Идёт сеанс. Переключить породу и прервать сеанс?')) return;
     if (session){ stopTick(); session = null; }
     state.activeId = id;
     resetForm();
     saveState();
-    renderBreeds();
+    dropdown.classList.remove('open');
+    renderDropdown();
     renderLibrary();
     renderSession();
   });
 
-  // двойной клик — переименовать
-  breedTabs.addEventListener('dblclick', e => {
-    const tab = e.target.closest('.breed-tab');
-    if (!tab) return;
-    const id = tab.dataset.id;
-    const b = state.breeds.find(x => x.id === id);
-    if (!b) return;
-    const name = prompt('Новое название породы:', b.name);
-    if (name == null) return;
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    b.name = trimmed;
-    saveState();
-    renderBreeds();
-    if (state.activeId === id) renderLibrary();
+  document.addEventListener('click', e => {
+    if (!dropdown.contains(e.target)){
+      dropdown.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') dropdown.classList.remove('open');
   });
 
   addBreedBtn.addEventListener('click', () => {
@@ -418,18 +577,16 @@
     if (name == null) return;
     const trimmed = name.trim();
     if (!trimmed) return;
-    // если для этой породы есть предустановка — используем её, иначе PRESET
     const b = { id: uid(), name: trimmed, items: defaultItemsFor(trimmed) };
     state.breeds.push(b);
     state.activeId = b.id;
     resetForm();
     saveState();
-    renderBreeds();
+    renderDropdown();
     renderLibrary();
     renderSession();
   });
 
-  /* ---------- библиотека ---------- */
   function renderLibrary(){
     const breed = getBreed();
     breedLabel.textContent = breed.name;
@@ -481,6 +638,7 @@
     }
     saveState();
     renderLibrary();
+    renderDropdown();
   });
 
   function resetForm(){
@@ -512,6 +670,7 @@
     }
     saveState();
     renderLibrary();
+    renderDropdown();
     actName.focus();
   });
 
@@ -522,6 +681,7 @@
     resetForm();
     saveState();
     renderLibrary();
+    renderDropdown();
   });
 
   resetBtn.addEventListener('click', () => {
@@ -537,9 +697,9 @@
     resetForm();
     saveState();
     renderLibrary();
+    renderDropdown();
   });
 
-  /* ---------- сеанс ---------- */
   function elapsedMs(it){
     if (it.status !== 'active') return it.actual || 0;
     const now = it.paused ? it.pauseStart : Date.now();
@@ -692,12 +852,31 @@
       const tp = session.items.reduce((s, i) => s + i.planned, 0);
       const ta = session.items.reduce((s, i) => s + (i.actual || 0), 0);
       const okCount = session.items.filter(i => i.status === 'ok').length;
+      const overCount = session.items.filter(i => i.status === 'over').length;
+      const total = session.items.length;
+
+      const allGreen = okCount === total;
+      const halfOrMoreRed = overCount >= Math.ceil(total / 2);
+
       const diff = ta - tp;
       const good = diff <= 0;
+
+      let extra = '';
+      if (allGreen) extra = `<div class="praise">${esc(pick(PRAISES))}</div>`;
+      else if (halfOrMoreRed) extra = `<div class="shame">${esc(pick(SHAMES))}</div>`;
+
       html += `
         <div class="summary ${good ? 'good' : 'bad'}">
           <b>${good ? '✓ Уложились в план' : '✕ Вышли за план'} ${diff <= 0 ? '−' : '+'}${fmt(Math.abs(diff))}</b>
-          <div class="line">${esc(session.breedName)} · План: ${fmt(tp)} · Факт: ${fmt(ta)} · В норме ${okCount} из ${session.items.length}</div>
+          <div class="breed-name">${esc(session.breedName)}</div>
+          <div class="line">
+            <span class="lbl">План</span> <span class="val">${fmt(tp)}</span>
+            <span class="sep">·</span>
+            <span class="lbl">Факт</span> <span class="val">${fmt(ta)}</span>
+            <span class="sep">·</span>
+            <span class="lbl">В норме</span> <span class="val">${okCount} из ${total}</span>
+          </div>
+          ${extra}
         </div>
         <div class="cur-controls">
           <button type="button" id="restartBtn" class="primary">↻ Новый сеанс</button>
@@ -726,9 +905,8 @@
 
   startBtn.addEventListener('click', startSession);
 
-  /* ---------- инициализация ---------- */
   loadState();
-  renderBreeds();
+  renderDropdown();
   renderLibrary();
   renderSession();
 })();
